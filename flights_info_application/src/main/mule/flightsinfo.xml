@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <http:listener-config name="flightsinfo-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8089" />
+    </http:listener-config>
+    <apikit:config name="flightsinfo-config" api="resource::4a385858-3575-477a-9ec5-016c230d1c72:flightsinfo:1.0.2:raml:zip:flightsinfo.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="3aa0d36c-ed45-4882-b934-6d995594bd01" >
+		<db:my-sql-connection port="3306" user="Sreevathsa" password="Sreevathsa2021" database="airlines_sandbox" host="rds-mysql-assessment.ckld9drpn0yb.eu-west-1.rds.amazonaws.com"/>
+	</db:config>
+	<flow name="flightsinfo-main">
+        <http:listener config-ref="flightsinfo-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="flightsinfo-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="flightsinfo-console">
+        <http:listener config-ref="flightsinfo-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="flightsinfo-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+	<flow name="patch:\flights:application\json:flightsinfo-config">
+        <choice doc:name="Choice" doc:id="bbe1c3f5-f363-4af0-8fff-0b64a17c5d96" >
+			<when expression="#[payload.Seat != null]">
+				<db:update doc:name="Update" doc:id="6d430fde-d4c3-442c-928e-f5588adf3c0e" config-ref="Database_Config">
+					<db:sql ><![CDATA[update flights_Sreevathsa set Seat_Availability = :Seat_Availability where  Flight_Code = :Flight_Code]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Seat_Availability : payload.Seat,
+	Flight_Code : payload.Flight
+}]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Transform Message" doc:id="aff2ac03-7ce1-4392-ae62-c18e178590af" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+if (payload.affectedRows > 0)
+	{ Status: "Seat Updated Succesfully" }
+else
+	{ Status: "Couldn't update the seat. Kindly check the Flight Code"}	
+	]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression="#[payload.Price != null]">
+				<set-variable value="#[payload.Flight]" doc:name="Set Variable" doc:id="b94cd5cf-368c-4c0e-93cd-06c33913ce61" variableName="Flight_Code"/>
+				<set-variable value="#[payload.Price]" doc:name="Set Variable" doc:id="44a7ef1a-18ee-4fea-9c03-4b41079bd61e" variableName="Price"/>
+				<db:select doc:name="Select" doc:id="92ac8bcb-566e-4f7e-91fc-211cb8d7bb3b" config-ref="Database_Config">
+					<db:sql ><![CDATA[select Price from flights_Sreevathsa where Flight_Code = :Flight_Code]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Flight_Code : payload.Flight
+}]]]></db:input-parameters>
+				</db:select>
+				<db:update doc:name="Update" doc:id="0b55cf47-e6fb-4a64-8dbb-721a42db8ec6" config-ref="Database_Config">
+					<db:sql ><![CDATA[update flights_Sreevathsa set Price = :Price where  Flight_Code = :Flight_Code]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Price : payload.Price[0] + vars.Price,
+	Flight_Code : vars.Flight_Code
+}]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Transform Message" doc:id="1df2a1a7-389f-474e-a994-9505daa093ab" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+if (payload.affectedRows > 0)
+	{ Status: "Price Updated Succesfully" }
+else
+	{ Status: "Couldn't update the Price. Kindly check the Flight Code"}	
+	]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="2c301f1c-ee11-4535-b761-ce6cd014ddf9" type="UPDATE:BAD_PARAMETERS" description="Only Price or Seat update available. Kindkly check the required parameters"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d47e9cd3-5e06-441c-bd8c-a24ec86d6f41" >
+				<ee:transform doc:name="Transform Message" doc:id="bc8ce7d5-b23d-4cfa-b9b8-46146075bfcd" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error_type : error.errorType.identifier,
+	error_message: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+	<flow name="get:\flights:flightsinfo-config">
+        <choice doc:name="Choice" doc:id="fe21d8aa-bb9f-46a1-ad6a-b1bba423b4d7" >
+			<when expression="#[attributes.queryParams.date != null]">
+				<logger level="INFO" doc:name="Logger" doc:id="9df25210-4beb-49e9-9ea8-8be7b0c4e108" message="#[attributes.queryParams.date]"/>
+				<db:select doc:name="Select" doc:id="54c8def6-47df-4e9a-836e-237d47348225" config-ref="Database_Config">
+					<db:sql ><![CDATA[select Departure_Airport,Price,Departure_Date,Aircraft_Type,Airline_Name,Destination_Airport from flights_Sreevathsa where DATE(Departure_Date)=:Departure_Date and Seat_Availability > 0]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Departure_Date : attributes.queryParams.date
+}]]]></db:input-parameters>
+				</db:select>
+				<set-variable value="#[sizeOf(payload)]" doc:name="Set Variable" doc:id="6468ab1f-08eb-4e21-95e7-f96f570ee78b" variableName="Payload_Size"/>
+				<logger level="INFO" doc:name="Logger" doc:id="504555ae-9e77-402c-9ce8-4a8d92d17fa8" message="#[vars.Payload_Size]" />
+				<choice doc:name="Choice" doc:id="384afd93-723f-435a-a8ca-c7f6954cb3a2" >
+					<when expression="#[vars.Payload_Size &gt; 0]">
+						<ee:transform doc:name="Transform Message" doc:id="1f5c2cfe-c7d1-40f0-835f-557827f758ba">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+
+payload
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					</when>
+					<otherwise >
+						<set-payload value='{"status":"No FLights available for given date"}' doc:name="Set Payload" doc:id="eb94ffe7-950a-4132-89a9-588a8cf41d94" />
+					</otherwise>
+				</choice>
+			</when>
+			<when expression="#[attributes.queryParams.airline != null]">
+				<logger level="INFO" doc:name="Logger" doc:id="4ae067aa-f1f6-4c7c-b328-46980af128af" message="#[attributes.queryParams.airline]"/>
+				<db:select doc:name="Select" doc:id="6a567288-fcc8-48f6-ae92-14ecca87a711" config-ref="Database_Config">
+					<db:sql ><![CDATA[select Destination_Airport from flights_Sreevathsa where Airline_Name=:Airline_Name
+]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	Airline_Name : attributes.queryParams.airline
+}]]]></db:input-parameters>
+				</db:select>
+				<set-variable value="#[sizeOf(payload)]" doc:name="Set Variable" doc:id="16dc80c5-1d94-4384-8ff5-826abad7fb8d" variableName="Payload_Size"/>
+				<logger level="INFO" doc:name="Logger" doc:id="b2a6e4af-d7a9-4043-b913-769676c4bf7e" message="#[vars.Payload_Size]"/>
+				<choice doc:name="Choice" doc:id="7c749628-c2a8-41ce-8c93-cad4abb92320" >
+					<when expression="#[vars.Payload_Size &gt; 0]">
+						<ee:transform doc:name="Transform Message" doc:id="94721150-9246-46bb-8396-e374472ecd11">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					</when>
+					<otherwise >
+						<set-payload value='{"status":"No FLights available for given airline"}' doc:name="Set Payload" doc:id="a044d1f2-b0d2-4f7f-a12b-b55b9c8c3046" />
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="ad3f4ec2-52c7-4bd9-9c6f-3ed76753244d" message="All Flights"/>
+				<db:select doc:name="Select" doc:id="c6c997a5-8328-4077-bf1a-b499c3b5c7a3" config-ref="Database_Config">
+					<db:sql ><![CDATA[select * from flights_Sreevathsa]]></db:sql>
+				</db:select>
+				<ee:transform doc:name="Transform Message" doc:id="1cb788d3-d4c0-4559-89c8-493b8c5eb9c7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2c11dc17-81f6-4d5c-9e82-5bfbf8508ce3" >
+				<ee:transform doc:name="Transform Message" doc:id="15e334e1-d3b8-4419-8700-eb5c351d331f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	error_type : error.errorType.identifier,
+	error_message: error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+    <flow name="get:\flights\ticket:flightsinfo-config">
+        <logger level="INFO" doc:name="Logger" doc:id="7bcdacd4-109e-469f-95cf-3b71a87e1be3" message="Ticket Check"/>
+		<set-variable value="#[attributes.queryParams.tickets]" doc:name="Set Variable" doc:id="7ff90660-1e16-4c49-a1f8-335a2c23c4e8" variableName="Tickets"/>
+		<db:select doc:name="Select" doc:id="9eefeec9-7349-4c55-9d89-47b551c5f7ec" config-ref="Database_Config">
+			<db:sql ><![CDATA[select Seat_Availability from flights_Sreevathsa where Flight_Code = :Flight_Code]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Flight_Code : attributes.queryParams.flightCode
+
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="26e7b34f-b20a-4677-973e-b8b69b7b82ef" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+	
+if (payload.Seat_Availability[0] == 0)
+	{ Status: "Flight Is FUll. KIndly look for other flight"}
+else if (payload.Seat_Availability[0] >= vars.Tickets)
+	{ Status: "Flight Is Available. Kindly proceed for booking" }
+else
+	{ Status: "KIndly try for less tickets"}	
+	
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="post:\flights:application\json:flightsinfo-config">
+        <db:insert doc:name="Insert" doc:id="a8d07a05-c238-416a-887d-fb0c018f6496" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into flights_Sreevathsa (Departure_Airport,Flight_Code,Price,Departure_Date,Aircraft_Type,Seat_Availability,Airline_Name,Destination_Airport) VALUES (:Departure_Airport,:Flight_Code,:Price,:Departure_Date,:Aircraft_Type,:Seat_Availability,:Airline_Name,:Destination_Airport)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Departure_Airport : payload.Dep,
+	Flight_Code: payload.Flight,
+	Price: payload.Price,
+	Departure_Date: payload.DepartureDate,
+	Aircraft_Type: payload.Aircraft,
+	Seat_Availability: payload.Seat,
+	Airline_Name: payload.Airline,
+	Destination_Airport: payload.Dst
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="bd5a9f45-5954-41a9-8196-3c34b85d5234" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+if (payload.affectedRows > 0)
+	{ Status: "New Flight Updated Succesfully" }
+else
+	{ Status: "Couldn't update the New FLight. Kindly check the Flight Code"}	]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+</mule>
