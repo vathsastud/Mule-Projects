@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>4a385858-3575-477a-9ec5-016c230d1c72</groupId>
+  <artifactId>flightsinfo</artifactId>
+  <version>1.0.2</version>
+  <name>FlightsInfo</name>
+  <properties>
+    <classifier>raml</classifier>
+    <main>flightsinfo.raml</main>
+    <originalFormatVersion>1.0</originalFormatVersion>
+    <apiVersion>v1</apiVersion>
+    <projectId>eddf505d-ba5b-4652-b1b6-f7119c48bf29</projectId>
+    <branchId>master</branchId>
+    <commitId>8276d30485197280d897560008c8830c0c678370</commitId>
+    <type>rest-api</type>
+    <mainFile>flightsinfo.raml</mainFile>
+  </properties>
+  <repositories>
+    <repository>
+      <id>anypoint-exchange</id>
+      <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>
+    </repository>
+  </repositories>
+</project>
